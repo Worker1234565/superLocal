@@ -232,40 +232,50 @@ private void checkHost(String baseIp, int start, int end) {
     }
     }
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-    String ipBase = jTextField1.getText().trim(); 
-    int start = (Integer) jSpinner2.getValue();
-    int end = (Integer) jSpinner3.getValue();
-    checkHost(ipBase, start, end);
+   int start = Integer.valueOf(jSpinner2.getValue().toString());
+    int end = Integer.valueOf(jSpinner3.getValue().toString());
+    String subnet = "192.168.4";
+    
+    
+    dlm.clear();
+    
+    
+    for (int i = start; i <= end; i++) {
+        final int currentIp = i;
         
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String host = subnet + "." + currentIp;
+                    int timeout = 200; 
+                    
+                    if (InetAddress.getByName(host).isReachable(timeout)) {
+                        
+                        javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                            public void run() {
+                                dlm.addElement(host);
+                            }
+                        });
+                        System.out.println(host + " is on the network");
+                    } else {
+                        System.out.println("Not Reachable: " + host);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
- private void createComp(int quantityComps) {
-        JPanel[] panels = new JPanel[quantityComps];
-        jPanel1.removeAll();
-        
-        for (int i = 0; i < quantityComps; i++) {
-            final JPanel dot = new JPanel();
-            pc = new pc(dlm.getElementAt(i).toString());
-            dot.add(pc);
-            panels[i] = dot;
-        }
-        
-        JPanel mainPanel=new JPanel();
-        //mainPanel.setBackground(Color.yellow);
-        mainPanel.setLayout(new GridLayout(3, 3, 5, 5)); // 2 последних значения -- отступы
 
-        for (int q = 0; q < panels.length; q++) {
-            mainPanel.add(panels[q]);
-        }
-        jPanel1.setLayout(new BorderLayout());
-        jPanel1.add(mainPanel, BorderLayout.CENTER);
-        jPanel1.revalidate();
-        
-    }
+
+   // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+
 
 
 
@@ -282,4 +292,8 @@ private void checkHost(String baseIp, int start, int end) {
     private javax.swing.JSpinner jSpinner3;
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
+
+    private void createComp(int countcomp) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
 }
