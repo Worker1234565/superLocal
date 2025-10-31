@@ -12,10 +12,13 @@ import java.awt.PopupMenu;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JPanel;
+import javax.swing.SwingWorker;
 
 /**
  *
@@ -26,17 +29,18 @@ public class MainPanel extends javax.swing.JPanel {
     /**
      * Creates new form MainPanel
      */
-private pc pc;
+    private pc pc;
     private JPanel[] panels;
     DefaultListModel dlm; // модель списка
+    StatusBar statusBar;
 
     /**
      * Creates new form MainPanel
      */
-    public MainPanel() {
+    public MainPanel(StatusBar statusBar) {
         initComponents();
-        dlm=new DefaultListModel(); 
-        
+        dlm = new DefaultListModel();
+
         dlm.clear();
         jList1.setModel(dlm);
         dlm.add(0, "Comp6");
@@ -45,36 +49,31 @@ private pc pc;
         dlm.add(3, "Comp3");
         dlm.add(4, "Comp2");
         dlm.add(5, "Comp1");
+        this.statusBar = statusBar;
     }
-    
-private void checkHost(String baseIp, int start, int end) {
-    dlm.clear();
-    int timeout = 100;
-    int j=0;
-    for (int i = start; i <= end; i++) {
-        try {
-            String host = baseIp + "." + i;
-            if (InetAddress.getByName(host).isReachable(timeout)){
-                dlm.add(j, host);
-                j++;
+
+
+
+
+
+    private void checkHost(String baseIp, int start, int end) {
+        dlm.clear();
+        int timeout = 100;
+        int j = 0;
+        for (int i = start; i <= end; i++) {
+            try {
+                String host = baseIp + "." + i;
+                if (InetAddress.getByName(host).isReachable(timeout)) {
+                    dlm.add(j, host);
+                    j++;
+                }
+            } catch (Exception ex) {
+
             }
-        } catch (Exception ex) {
-           
         }
     }
-}
 
-
-                   
-
-                                         
-
-            
-        //checkHost()
-                                            
-
-
-
+    //checkHost()
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -188,95 +187,162 @@ private void checkHost(String baseIp, int start, int end) {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-       
         int countcomp = dlm.getSize();
         createComp(countcomp);
+    }    
+private void createComp(int quantityComps) {
+        panels = new JPanel[quantityComps];
+        jPanel1.removeAll();
+        for (int i = 0; i < quantityComps; i++) {
+            final JPanel dot = new JPanel();
+            pc = new pc(dlm.getElementAt(i).toString());
+            dot.add(pc);
+            panels[i] = dot;
+        }
+        
+        JPanel mainPanel=new JPanel();
+        //mainPanel.setBackground(Color.yellow);
+        mainPanel.setLayout(new GridLayout(3, 3, 5, 5)); // 2 последних значения -- отступы
+
+        for (int q = 0; q < panels.length; q++) {
+            mainPanel.add(panels[q]);
+        }
+        jPanel1.setLayout(new BorderLayout());
+        jPanel1.add(mainPanel, BorderLayout.CENTER);
+        jPanel1.revalidate();
+        
+    
+
 
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton1ActionPerformed
 
-
-    
     public static void getNetworkIPS() {
-    final byte[] ip;
-    try {
-        ip = InetAddress.getLocalHost().getAddress();
-    } catch (Exception e) {
-        return; 
+        final byte[] ip;
+        try {
+            ip = InetAddress.getLocalHost().getAddress();
+        } catch (Exception e) {
+            return;
+        }
+
+        for (int i = 1; i <= 254; i++) {
+            final int j = i;
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        ip[3] = (byte) j;
+
+                        String host = "192.168.4" + "." + j;
+
+                        //InetAddress address = InetAddress.getByAddress(ip);
+                        //String output = address.toString().substring(1);
+                        if (InetAddress.getByName(host).isReachable(200)) {
+                            System.out.println(host + " is on the network");
+                        } else {
+                            System.out.println("Not Reachable: " + host);
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }).start();
+        }
+    
     }
     
-    for (int i = 1; i <= 254; i++) {
-        final int j = i;
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    ip[3] = (byte) j;
-                   
-                    String host = "192.168.4" + "." + j;
-                   
-                    //InetAddress address = InetAddress.getByAddress(ip);
-                    //String output = address.toString().substring(1);
-
-                    if ( InetAddress.getByName(host).isReachable(200)) {
-                        System.out.println(host + " is on the network");
-                    } else {
-                        System.out.println("Not Reachable: " + host);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+    private static class ScanResult {
+    String host;
+    boolean isReachable;
+    
+    public ScanResult(String host, boolean isReachable) {
+        this.host = host;
+        this.isReachable = isReachable;
     }
-    }
+}
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-   int start = Integer.valueOf(jSpinner2.getValue().toString());
-    int end = Integer.valueOf(jSpinner3.getValue().toString());
-    String subnet = "192.168.4";
     
-    
-    dlm.clear();
-    
-    
-    for (int i = start; i <= end; i++) {
-        final int currentIp = i;
         
-        new Thread(new Runnable() {
+        
+        
+ int start = Integer.valueOf(jSpinner2.getValue().toString());
+        int end = Integer.valueOf(jSpinner3.getValue().toString());
+        String subnet = jTextField1.getText().trim();
+
+        
+        int totalSections = Integer.valueOf(jSpinner2.getValue().toString());
+        dlm.clear();
+        statusBar.setStatusPG(0);
+
+        final int totalHosts = end - start + 1;
+        final java.util.concurrent.atomic.AtomicInteger completedHosts = new java.util.concurrent.atomic.AtomicInteger(0);
+
+        
+        SwingWorker<Void, Integer> progressWorker = new SwingWorker<Void, Integer>() {
             @Override
-            public void run() {
-                try {
-                    String host = subnet + "." + currentIp;
-                    int timeout = 200; 
+            protected Void doInBackground() throws Exception {
+                while (completedHosts.get() < totalHosts) {
                     
-                    if (InetAddress.getByName(host).isReachable(timeout)) {
-                        
-                        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-                            public void run() {
-                                dlm.addElement(host);
-                            }
-                        });
-                        System.out.println(host + " is on the network");
-                    } else {
-                        System.out.println("Not Reachable: " + host);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    int progress = (completedHosts.get() * totalSections / totalHosts) * (100 / totalSections);
+                    publish(Math.min(progress, 100));
+                    Thread.sleep(50);
                 }
+                publish(100);
+                return null;
             }
-        }).start();
-    }
-        // TODO add your handling code here:
+
+            @Override
+            protected void process(List<Integer> chunks) {
+                int progress = chunks.get(chunks.size() - 1);
+                statusBar.setStatusPG(progress);
+            }
+
+            @Override
+            protected void done() {
+                statusBar.setStatusPG(100);
+            }
+        };
+
+       
+        progressWorker.execute();
+
+        
+        for (int i = start; i <= end; i++) {
+            final int currentIp = i;
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        String host = subnet + "." + currentIp;
+                        int timeout = 200;
+
+                        if (InetAddress.getByName(host).isReachable(timeout)) {
+                            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                                public void run() {
+                                    dlm.addElement(host);
+                                }
+                            });
+                          
+                        } else {
+                            
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    } finally {
+                        completedHosts.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
 
-
-   // TODO add your handling code here:
+        // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
-
-
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -293,7 +359,5 @@ private void checkHost(String baseIp, int start, int end) {
     private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 
-    private void createComp(int countcomp) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    
 }
